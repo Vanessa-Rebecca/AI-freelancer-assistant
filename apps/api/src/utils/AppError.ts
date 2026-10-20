@@ -33,4 +33,14 @@ export class AppError extends Error {
   static conflict(message: string) {
     return new AppError(409, 'CONFLICT', message);
   }
+
+  static tooManyRequests(retryAfterSeconds: number) {
+    const minutes = Math.ceil(retryAfterSeconds / 60);
+    return new AppError(
+      429,
+      'TOO_MANY_REQUESTS',
+      `Too many attempts. Please try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`,
+      { retryAfterSeconds },
+    );
+  }
 }

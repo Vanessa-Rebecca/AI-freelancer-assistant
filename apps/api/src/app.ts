@@ -9,6 +9,7 @@ import { authRouter } from './routes/auth.routes.ts';
 
 export function createApp() {
   const app = express();
+  app.set('trust proxy', env.TRUST_PROXY);
 
   app.use(helmet());
   app.use(cors({ origin: env.CLIENT_ORIGIN, credentials: true }));
