@@ -44,7 +44,7 @@ Branch: `day-1/foundation`
 |---|---|---|---|
 | 1.1 | `apps/api`: Express + TS, `src/app.ts` / `src/server.ts`, `helmet`, `cors`, `cookie-parser`, JSON body limit, `GET /api/v1/health` | `curl localhost:4000/api/v1/health` → `{ "data": { "status": "ok" } }` | `feat(api): scaffold Express server with health check` |
 | 1.2 | Env loader validated with Zod (`src/config/env.ts`), `.env.example` | Server refuses to start if a required variable is missing | `feat(api): add validated environment config` |
-| 1.3 | Central error handler, `AppError` class, `asyncHandler`, 404 handler, request logger (pino) | Throwing in a route returns the `{ error: { code, message } }` shape | `feat(api): add error handling and request logging` |
+| 1.3 | Central error handler, `AppError` class, 404 handler (Express 5 forwards async errors itself, so no `asyncHandler` wrapper), request logger (pino) | Throwing in a route returns the `{ error: { code, message } }` shape | `feat(api): add error handling and request logging` |
 | 1.4 | Create Neon DB; Prisma init; models `User`, `UserProfile`, `UserSettings`, `RefreshToken`, `PasswordResetToken`, `EmailVerificationToken`; first migration | `npx prisma migrate dev` succeeds; tables visible in Prisma Studio | `feat(db): add user, profile, settings and token models` |
 | 1.5 | `packages/shared`: Zod schemas `registerSchema`, `loginSchema`, `forgotPasswordSchema`, `resetPasswordSchema`; `validate(schema)` middleware in api | Invalid body → 400 with field errors | `feat(shared): add auth validation schemas` |
 | 1.6 | Vitest + Supertest setup with a separate test database; health check test | `npm test` passes | `test(api): set up Vitest and Supertest` |
