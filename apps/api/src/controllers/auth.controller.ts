@@ -1,5 +1,6 @@
 import type { RequestHandler } from 'express';
 import * as authService from '../services/auth.service.ts';
+import * as passwordResetService from '../services/password-reset.service.ts';
 import { authUser } from '../middleware/requireAuth.ts';
 import { clearRefreshCookie, readRefreshCookie, setRefreshCookie } from '../utils/tokens.ts';
 
@@ -40,6 +41,18 @@ export const logout: RequestHandler = async (req, res) => {
   await authService.logoutSession(readRefreshCookie(req));
   clearRefreshCookie(res);
   res.status(204).end();
+};
+
+export const forgotPassword: RequestHandler = (req, res) => {
+  passwordResetService.requestPasswordReset(req.body);
+  res.json({
+    data: { message: "If an account exists for that email, we've sent a reset link." },
+  });
+};
+
+export const resetPassword: RequestHandler = async (req, res) => {
+  await passwordResetService.resetPassword(req.body);
+  res.json({ data: { message: 'Password updated. Please log in with your new password.' } });
 };
 
 export const me: RequestHandler = async (req, res) => {

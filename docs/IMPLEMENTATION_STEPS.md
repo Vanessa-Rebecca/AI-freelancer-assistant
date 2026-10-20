@@ -54,8 +54,8 @@ Branch: `day-1/foundation`
 | 1.8 | Token utils: sign/verify access JWT (15 min), create/hash refresh token, set httpOnly cookie | A token signed then verified returns the same user id | `feat(auth): add JWT and refresh token utilities` |
 | 1.9 | `POST /auth/login`, `requireAuth` middleware, `GET /auth/me` | curl: login → access token → `/me` returns the user; bad password → 401 | `feat(auth): add login and protected route middleware` |
 | 1.10 | `POST /auth/refresh` (rotation + reuse detection), `POST /auth/logout` | curl: old refresh token rejected after rotation | `feat(auth): add refresh token rotation and logout` |
-| 1.11 | Resend email service + HTML templates; `forgot-password` and `reset-password` endpoints (same response for unknown emails) | Reset email arrives; link changes password; token single-use | `feat(auth): add forgot and reset password flow` |
-| 1.12 | Email verification (`verify-email`, resend link), behind `REQUIRE_EMAIL_VERIFICATION` flag | Verification link sets `emailVerifiedAt` | `feat(auth): add optional email verification` |
+| 1.11 | `forgot-password` and `reset-password` endpoints (same response for unknown emails) with a development mailer that prints the email to the server log | Reset link from the log changes the password; token single-use | `feat(auth): add forgot and reset password flow` |
+| 1.12 | *Deferred (optional in the brief).* Email verification (`verify-email`, resend link), behind `REQUIRE_EMAIL_VERIFICATION` flag. Do on Day 5 if time allows | Verification link sets `emailVerifiedAt` | `feat(auth): add optional email verification` |
 | 1.13 | Rate limit on auth routes (5 / 15 min) | 6th failed login → 429 | `feat(auth): rate limit authentication endpoints` |
 
 ### Frontend shell
@@ -78,7 +78,7 @@ Branch: `day-1/foundation`
 | Step | What to do | Done when | Commit message |
 |---|---|---|---|
 | 1.22 | GitHub Actions: install → lint → typecheck | CI green on the PR | `ci: add lint and typecheck workflow` |
-| 1.23 | Render (api) + Vercel (web) config, production env vars, CORS + cookie settings for cross-site | Register/login works on the live URL | `chore: add deployment config for Render and Vercel` |
+| 1.23 | Render (api) + Vercel (web) config, production env vars, Vercel `/api` proxy so cookies stay same-site; real email provider (Resend) behind `sendEmail()` | Register/login works on the live URL | `chore: add deployment config for Render and Vercel` |
 | 1.24 | Seed script: demo user + sample client | `npm run db:seed` works | `chore(db): add seed script with demo user` |
 
 **End of day:** open PR → merge into `main` → demo.
