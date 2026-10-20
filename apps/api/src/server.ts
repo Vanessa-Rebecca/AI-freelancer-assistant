@@ -1,10 +1,8 @@
 import { createApp } from './app.ts';
+import { env } from './config/env.ts';
 
-// Replaced by validated env config in Step 1.2
-const PORT = Number(process.env.PORT ?? 4000);
-
-const server = createApp().listen(PORT, () => {
-  console.warn(`API listening on http://localhost:${PORT}`);
+const server = createApp().listen(env.PORT, () => {
+  console.warn(`API listening on http://localhost:${env.PORT} (${env.NODE_ENV})`);
 });
 
 // Render sends SIGTERM on redeploy: finish in-flight requests, then exit
