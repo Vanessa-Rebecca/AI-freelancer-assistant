@@ -29,7 +29,7 @@ git add -A && git commit -m "<message from the step>"
 | Step | What to do | Done when | Commit message |
 |---|---|---|---|
 | 0.1 | Add `README.md` (title + one line), `.gitignore` (node_modules, dist, .env*, coverage), `.editorconfig`, and both docs files | `git status` is clean after the commit | `docs: add project plan and implementation steps` |
-| 0.2 | Root `package.json` with npm workspaces `apps/*`, `packages/*`; `.nvmrc` (20) | `npm install` runs | `chore: set up npm workspaces monorepo` |
+| 0.2 | Root `package.json` with npm workspaces `apps/*`, `packages/*`; `.nvmrc` (24) | `npm install` runs | `chore: set up npm workspaces monorepo` |
 | 0.3 | Shared `tsconfig.base.json`, ESLint + Prettier configs, root scripts `lint`, `typecheck`, `format` | `npm run lint` passes | `chore: add TypeScript, ESLint and Prettier config` |
 | 0.4 | Husky + lint-staged pre-commit hook | A commit with a lint error is blocked | `chore: add pre-commit hook with lint-staged` |
 | 0.5 | Create the GitHub repo, push `main`, protect `main` (require PR + CI) | Repo visible on GitHub | *(no commit, just push)* |

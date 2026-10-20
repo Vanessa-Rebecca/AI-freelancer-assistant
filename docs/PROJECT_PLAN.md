@@ -20,7 +20,7 @@ The system is a React single-page app talking to a Node.js/Express REST API, bac
 | Concern | Decision | Why |
 |---|---|---|
 | Frontend | React 18 + Vite + TypeScript + Tailwind CSS | The brief recommends React. Vite builds fast. TypeScript catches errors early. Tailwind gives a responsive UI and dark mode quickly. |
-| Backend | Node.js 20 + Express + TypeScript | One language across the stack, a large ecosystem, and it fits the brief. |
+| Backend | Node.js 24 LTS + Express + TypeScript | One language across the stack, a large ecosystem, and it fits the brief. |
 | Database | PostgreSQL (Neon, managed) + Prisma ORM | The data is relational (users → clients → invoices). Prisma gives typed queries and versioned migrations. |
 | AI | Google Gemini (primary) behind a provider interface, OpenAI as a pluggable alternative | Gemini has a free tier, which keeps demo costs low. The interface lets us switch providers without touching feature code. |
 | Auth | JWT access token (15 min) + rotating refresh token in an httpOnly cookie | Meets the "JWT" requirement without storing tokens in localStorage, where XSS could steal them. |
