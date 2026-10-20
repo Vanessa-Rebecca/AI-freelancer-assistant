@@ -4,7 +4,7 @@ import type { LoginInput, RegisterInput } from '@afa/shared';
 import { prisma } from '../db/prisma.ts';
 import { AppError } from '../utils/AppError.ts';
 import { hashPassword, verifyPassword } from '../utils/password.ts';
-import { generateRefreshToken, signAccessToken } from '../utils/tokens.ts';
+import { generateRefreshToken, hashToken, signAccessToken } from '../utils/tokens.ts';
 
 // The only user fields ever sent to the client. passwordHash is never selected.
 export const publicUserSelect = {
@@ -89,6 +89,59 @@ export async function loginUser({ email, password }: LoginInput, userAgent?: str
     select: publicUserSelect,
   });
   return { user, ...(await createSession(user.id, user.role, userAgent)) };
+}
+
+const SESSION_EXPIRED = 'Session expired, please log in again';
+
+// A revoked token seen again after this window means it was copied. Inside the
+// window it's just two tabs refreshing at once, so we don't punish the user.
+const REUSE_GRACE_MS = 10_000;
+
+export async function revokeAllSessions(userId: string) {
+  await prisma.refreshToken.updateMany({
+    where: { userId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+}
+
+// Rotation: each refresh token works once and is replaced by a new one
+export async function refreshSession(token: string | undefined, userAgent?: string) {
+  if (!token) throw AppError.unauthorized(SESSION_EXPIRED);
+
+  const stored = await prisma.refreshToken.findUnique({
+    where: { tokenHash: hashToken(token) },
+    select: { id: true, userId: true, expiresAt: true, revokedAt: true },
+  });
+  if (!stored) throw AppError.unauthorized(SESSION_EXPIRED);
+
+  if (stored.revokedAt) {
+    if (Date.now() - stored.revokedAt.getTime() > REUSE_GRACE_MS) {
+      await revokeAllSessions(stored.userId);
+    }
+    throw AppError.unauthorized(SESSION_EXPIRED);
+  }
+  if (stored.expiresAt <= new Date()) throw AppError.unauthorized(SESSION_EXPIRED);
+
+  // Only succeeds if still active right now, so concurrent refreshes can't both win
+  const { count } = await prisma.refreshToken.updateMany({
+    where: { id: stored.id, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+  if (count === 0) throw AppError.unauthorized(SESSION_EXPIRED);
+
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: stored.userId },
+    select: publicUserSelect,
+  });
+  return { user, ...(await createSession(user.id, user.role, userAgent)) };
+}
+
+export async function logoutSession(token: string | undefined) {
+  if (!token) return;
+  await prisma.refreshToken.updateMany({
+    where: { tokenHash: hashToken(token), revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
 }
 
 export async function getCurrentUser(userId: string) {
