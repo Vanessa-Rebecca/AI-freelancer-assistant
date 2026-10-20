@@ -5,6 +5,7 @@ import { env } from './config/env.ts';
 import { requestLogger } from './middleware/requestLogger.ts';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.ts';
 import { healthRouter } from './routes/health.routes.ts';
+import { authRouter } from './routes/auth.routes.ts';
 
 export function createApp() {
   const app = express();
@@ -15,6 +16,7 @@ export function createApp() {
   app.use(express.json({ limit: '1mb' }));
 
   app.use('/api/v1/health', healthRouter);
+  app.use('/api/v1/auth', authRouter);
 
   // Must stay last: unknown routes, then the single error formatter
   app.use(notFoundHandler);

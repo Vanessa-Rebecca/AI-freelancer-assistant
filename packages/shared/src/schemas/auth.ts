@@ -6,11 +6,11 @@ export const emailSchema = z
   .toLowerCase()
   .pipe(z.email('Enter a valid email address'));
 
-// bcrypt ignores everything after 72 bytes, so longer passwords are rejected
+// The max length stops huge inputs from tying up the CPU while hashing
 export const passwordSchema = z
   .string('Password is required')
   .min(8, 'Password must be at least 8 characters')
-  .max(72, 'Password must be at most 72 characters')
+  .max(128, 'Password must be at most 128 characters')
   .regex(/[A-Za-z]/, 'Password must contain a letter')
   .regex(/[0-9]/, 'Password must contain a number');
 

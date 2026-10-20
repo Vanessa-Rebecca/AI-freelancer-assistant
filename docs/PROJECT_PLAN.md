@@ -121,7 +121,7 @@ All tables have `id` (cuid), `createdAt`, `updatedAt`. All document tables have 
 
 | Table | Key columns | Notes |
 |---|---|---|
-| **User** | email (unique), passwordHash, emailVerifiedAt, aiCredits (default 100), role | bcrypt cost 12. |
+| **User** | email (unique), passwordHash, emailVerifiedAt, aiCredits (default 100), role | scrypt (Node built-in, OWASP parameters). |
 | **UserProfile** | userId (1:1), fullName, title, bio, skills[], hourlyRate, portfolioUrl, avatarUrl, location | Used to pre-fill generator forms. |
 | **UserSettings** | userId (1:1), theme, language, currency, notifyEmail, aiProvider, encryptedApiKey | API key encrypted with AES-256-GCM. Only the last 4 characters are ever returned. |
 | **RefreshToken** | userId, tokenHash, expiresAt, revokedAt, userAgent | Rotation and reuse detection. Supports "log out all devices". |
@@ -174,7 +174,7 @@ interface AIProvider {
 
 | Area | Control |
 |---|---|
-| Passwords | bcrypt (cost 12). Minimum 8 characters, with complexity checked by Zod. |
+| Passwords | scrypt via Node `crypto` (N=2^14, r=8, p=5, random salt, constant-time compare). 8–128 characters, with complexity checked by Zod. |
 | Tokens | Short-lived access JWT held in memory. Refresh token in an `httpOnly; Secure; SameSite` cookie, rotated on each use, with reuse detection. |
 | Authorization | Every query is scoped by `userId`. Requesting another user's document returns 404, not 403, so we don't confirm the record exists. |
 | Input | Zod validation on every endpoint. Prisma parameterises all SQL. React escapes output. Markdown is rendered with sanitisation. |
@@ -246,7 +246,7 @@ Each day ends with: code merged to `main` → CI green → auto-deployed → 10-
 | 3.2 | Pricing calculator, **deterministic and free**: `base = rate × hours`, then complexity multiplier (1.0 / 1.25 / 1.5), urgency multiplier (1.0 / 1.2 / 1.5), plus itemised extras and optional tax. Updates live as you type, with a breakdown table |
 | 3.3 | AI pricing suggestions (on demand): suggested price range, recommended delivery time, market positioning analysis, improvement tips. Clearly labelled as an estimate |
 | 3.4 | Pricing history list and "use this price in a proposal/invoice" shortcut |
-| 3.5 | Unit tests for the pricing formula (money maths must be exact) |
+| 3.5 | Check the pricing formula against hand-calculated examples (money maths must be exact) |
 
 **Acceptance:** gig output saves and re-opens correctly. Calculator totals match the hand-checked test cases. AI suggestion returns valid structured data.
 
@@ -259,7 +259,7 @@ Each day ends with: code merged to `main` → CI green → auto-deployed → 10-
 | 4.4 | Invoice PDF: professional template with freelancer details from profile |
 | 4.5 | Contract generator: client + freelancer details, scope, timeline, payment terms, custom T&Cs → AI-drafted contract, editable, PDF with signature blocks and legal disclaimer |
 
-**Acceptance:** all three modules save, list and export. Invoice maths verified by tests.
+**Acceptance:** all three modules save, list and export. Invoice totals match hand-calculated examples.
 
 ### Day 5 — History, Profile, Settings, Hardening & Launch
 | # | Task |
@@ -276,15 +276,13 @@ Each day ends with: code merged to `main` → CI green → auto-deployed → 10-
 
 ## 9. Quality Assurance
 
-| Level | Tooling | Coverage target |
-|---|---|---|
-| Unit | Vitest | Pricing and invoice maths, token utils, prompt builders: 100% of money logic |
-| API integration | Vitest + Supertest against a test DB | Every auth flow, CRUD ownership checks, credit deduction/refund |
-| Frontend | React Testing Library | Forms, protected routing |
-| E2E smoke | Playwright | Register → generate proposal → export PDF → logout, run against staging |
-| Manual | Release checklist | Chrome, Firefox, Safari, Edge. 360 px, 768 px and 1440 px widths. Keyboard navigation |
+Testing is manual, matching the brief's "Final Testing" requirement. Automated tests are out of scope for this engagement.
 
-The AI provider is **mocked** in automated tests, so CI is deterministic and spends no credits.
+| When | How | What is checked |
+|---|---|---|
+| Every step | curl / browser, per the step's "Done when" | The feature just built works, including its error cases |
+| Every push | CI: lint + typecheck | Code style and type errors |
+| Day 5 (Final Testing) | Release checklist | Every auth flow, ownership checks (another user's document → 404), credit deduction/refund, invoice and pricing totals against hand-calculated examples. Chrome, Firefox, Safari, Edge. 360 px, 768 px and 1440 px widths. Keyboard navigation |
 
 ---
 
