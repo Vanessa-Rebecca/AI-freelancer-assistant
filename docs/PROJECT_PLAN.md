@@ -216,7 +216,7 @@ Each day ends with: code merged to `main` → CI green → auto-deployed → 10-
 ### Day 1 — Foundation, Authentication & Dashboard
 | # | Task | Output |
 |---|---|---|
-| 1.1 | Monorepo scaffold, TypeScript, ESLint/Prettier, Husky, CI workflow | Repo builds and lints in CI |
+| 1.1 | Monorepo scaffold, TypeScript, ESLint/Prettier, CI workflow | Repo builds and lints in CI |
 | 1.2 | Provision Neon, Render, Vercel, and wire environment variables | Empty app live at a URL **on Day 1** (removes deployment risk early) |
 | 1.3 | Prisma schema: User, UserProfile, UserSettings, tokens, Client, Activity, AiUsage. First migration and seed script | DB connected |
 | 1.4 | Auth API: register, login, refresh, logout, me, forgot/reset password via Resend, email verification (optional flag) | Auth endpoints with tests |
