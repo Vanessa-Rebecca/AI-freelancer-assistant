@@ -217,7 +217,7 @@ Each day ends with: code merged to `main` → CI green → auto-deployed → 10-
 | # | Task | Output |
 |---|---|---|
 | 1.1 | Monorepo scaffold, TypeScript, ESLint/Prettier, CI workflow | Repo builds and lints in CI |
-| 1.2 | Provision Neon, Render, Vercel, and wire environment variables | Empty app live at a URL **on Day 1** (removes deployment risk early) |
+| 1.2 | Provision Neon and wire environment variables (Render + Vercel deployment moved to Day 5 by client decision; app kept deployment-ready throughout) | Database connected |
 | 1.3 | Prisma schema: User, UserProfile, UserSettings, tokens, Client, Activity, AiUsage. First migration and seed script | DB connected |
 | 1.4 | Auth API: register, login, refresh, logout, me, forgot/reset password via Resend, email verification (optional flag) | Auth endpoints with tests |
 | 1.5 | Frontend shell: router, protected routes, auth context, Axios interceptor with silent refresh, app layout (sidebar, topbar, mobile drawer), theme toggle | |
