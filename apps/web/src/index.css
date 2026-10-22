@@ -60,3 +60,86 @@
 body {
   @apply bg-background text-foreground font-sans antialiased;
 }
+
+/* ---------- Print / "Save as PDF" ----------
+   Only .print-only (PrintableDocument) is printed, always black on white. */
+.print-only {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 18mm 18mm 20mm;
+  }
+
+  /* Remove the app entirely (no blank pages); show only the printable copy */
+  #root,
+  body > [aria-live] {
+    display: none !important;
+  }
+  .print-only {
+    display: block;
+    width: 100%;
+    color: #111827;
+    background: #ffffff;
+    font-size: 11pt;
+    line-height: 1.55;
+  }
+  /* Always light on paper, even in dark mode (also the page margins) */
+  html,
+  html.dark {
+    color-scheme: light !important;
+    background: #ffffff !important;
+  }
+  body {
+    background: #ffffff !important;
+  }
+
+  .print-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 10pt;
+    margin-bottom: 18pt;
+    border-bottom: 1.5pt solid #4f46e5;
+  }
+  .print-author {
+    font-size: 13pt;
+    font-weight: 600;
+  }
+  .print-kind {
+    color: #4f46e5;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 9pt;
+  }
+  .print-title {
+    font-size: 18pt;
+    font-weight: 700;
+    line-height: 1.25;
+    margin-bottom: 4pt;
+  }
+  .print-muted {
+    color: #6b7280;
+    font-size: 9.5pt;
+  }
+  .print-body {
+    margin-top: 16pt;
+  }
+  .print-body p {
+    white-space: pre-line;
+    margin-bottom: 9pt;
+    /* Don't leave a lone line at the top or bottom of a page */
+    orphans: 3;
+    widows: 3;
+  }
+  .print-footer {
+    margin-top: 24pt;
+    padding-top: 8pt;
+    border-top: 0.5pt solid #e5e7eb;
+    color: #9ca3af;
+    font-size: 8pt;
+  }
+}

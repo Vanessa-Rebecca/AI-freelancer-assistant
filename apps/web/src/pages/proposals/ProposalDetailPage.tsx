@@ -5,6 +5,8 @@ import type { Proposal } from '@afa/shared';
 import { PageHeader } from '../../components/layout/PageHeader.tsx';
 import { CopyButton } from '../../components/documents/CopyButton.tsx';
 import { DocumentEditor } from '../../components/documents/DocumentEditor.tsx';
+import { ExportPdfButton } from '../../components/documents/ExportPdfButton.tsx';
+import { PrintableDocument } from '../../components/documents/PrintableDocument.tsx';
 import { Button } from '../../components/ui/Button.tsx';
 import { Card } from '../../components/ui/Card.tsx';
 import { Modal } from '../../components/ui/Modal.tsx';
@@ -115,6 +117,17 @@ function ProposalEditor({ proposal }: { proposal: Proposal }) {
         }
       />
 
+      {/* Prints the text in the editor, including unsaved edits */}
+      <PrintableDocument
+        kind="Proposal"
+        title={proposal.projectTitle}
+        meta={[
+          `Prepared for ${proposal.clientName}`,
+          new Date().toLocaleDateString(undefined, { dateStyle: 'long' }),
+        ]}
+        body={content}
+      />
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="min-w-0 lg:col-span-2">
           <DocumentEditor label="Proposal text" value={content} onChange={setContent} />
@@ -127,6 +140,9 @@ function ProposalEditor({ proposal }: { proposal: Proposal }) {
               Save changes
             </Button>
             <CopyButton text={content} />
+            <ExportPdfButton
+              fileName={`Proposal - ${proposal.projectTitle} - ${proposal.clientName}`}
+            />
             <Button variant="danger" className="sm:ml-auto" onClick={() => setConfirmDelete(true)}>
               Delete
             </Button>
