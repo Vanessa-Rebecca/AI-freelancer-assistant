@@ -1,4 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router';
+import type { Location } from 'react-router';
 import { useAuth } from './AuthContext.tsx';
 
 // Shown while the session is being restored, so protected pages don't flash /login
@@ -23,11 +24,15 @@ export function ProtectedRoute() {
   return <Outlet />;
 }
 
-// Login/register pages: logged-in users go straight to the app
+// Login/register pages: logged-in users go on to where they were heading
 export function GuestRoute() {
   const { status } = useAuth();
+  const location = useLocation();
 
   if (status === 'loading') return <FullPageLoader />;
-  if (status === 'authenticated') return <Navigate to="/dashboard" replace />;
+  if (status === 'authenticated') {
+    const from = (location.state as { from?: Location } | null)?.from;
+    return <Navigate to={from ? `${from.pathname}${from.search}` : '/dashboard'} replace />;
+  }
   return <Outlet />;
 }

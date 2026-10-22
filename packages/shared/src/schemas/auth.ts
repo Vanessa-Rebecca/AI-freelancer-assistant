@@ -4,11 +4,13 @@ export const emailSchema = z
   .string('Email is required')
   .trim()
   .toLowerCase()
+  .min(1, 'Email is required')
   .pipe(z.email('Enter a valid email address'));
 
 // The max length stops huge inputs from tying up the CPU while hashing
 export const passwordSchema = z
   .string('Password is required')
+  .min(1, 'Password is required')
   .min(8, 'Password must be at least 8 characters')
   .max(128, 'Password must be at most 128 characters')
   .regex(/[A-Za-z]/, 'Password must contain a letter')
@@ -18,6 +20,7 @@ export const registerSchema = z.object({
   fullName: z
     .string('Name is required')
     .trim()
+    .min(1, 'Name is required')
     .min(2, 'Name must be at least 2 characters')
     .max(100, 'Name must be at most 100 characters'),
   email: emailSchema,

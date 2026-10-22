@@ -1,4 +1,5 @@
 import { createContext, use, useCallback, useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import type { AuthResponse, LoginInput, PublicUser, RegisterInput } from '@afa/shared';
 import { api, refreshSession, setAccessToken, setSessionExpiredHandler } from '../lib/api.ts';
@@ -25,10 +26,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState({ status: 'authenticated', user });
   }, []);
 
+  const queryClient = useQueryClient();
+
   const endSession = useCallback(() => {
     setAccessToken(null);
+    // Drop cached data so the next person on this browser never sees it
+    queryClient.clear();
     setState({ status: 'anonymous', user: null });
-  }, []);
+  }, [queryClient]);
 
   // On load, swap the refresh cookie for an access token (lost on reload)
   useEffect(() => {

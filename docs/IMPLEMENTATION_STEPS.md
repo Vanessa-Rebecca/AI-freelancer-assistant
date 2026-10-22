@@ -78,8 +78,8 @@ Branch: `day-1/foundation`
 | Step | What to do | Done when | Commit message |
 |---|---|---|---|
 | 1.22 | GitHub Actions: install → lint → typecheck | CI green on the PR | `ci: add lint and typecheck workflow` |
-| 1.23 | Render (api) + Vercel (web) config, production env vars, Vercel `/api` proxy so cookies stay same-site; real email provider (Resend) behind `sendEmail()` | Register/login works on the live URL | `chore: add deployment config for Render and Vercel` |
-| 1.24 | Seed script: demo user + sample client | `npm run db:seed` works | `chore(db): add seed script with demo user` |
+| 1.23 | *Moved to Day 5 (Step 5.14b)* — deployment happens once the app is complete | — | — |
+| 1.24 | *Merged into Step 5.16* — demo data is seeded once all modules exist | — | — |
 
 **End of day:** open PR → merge into `main` → demo.
 
@@ -182,8 +182,9 @@ Branch: `day-5/history-settings-launch`
 ### Delivery
 | Step | What to do | Done when | Commit message |
 |---|---|---|---|
+| 5.14b | Render (api) + Vercel (web) config, production env vars, Vercel `/api` proxy so cookies stay same-site; real email provider (Resend) behind `sendEmail()` | Register/login works on the live URL | `chore: add deployment config for Render and Vercel` |
 | 5.15 | OpenAPI spec + Swagger UI at `/api/docs`; export Postman collection to `docs/` | Docs page loads on live API | `docs(api): add OpenAPI spec and Swagger UI` |
-| 5.16 | Seed rich demo data; `pg_dump` to `database/database.sql`; ERD image | Dump restores into an empty DB | `chore(db): add database dump and ERD` |
+| 5.16 | Seed script (`npm run db:seed`: demo user, clients and sample documents); `pg_dump` to `database/database.sql`; ERD image | Dump restores into an empty DB | `chore(db): add database dump and ERD` |
 | 5.17 | Full README: features, screenshots, architecture, local setup, env vars, deployment, demo login | A new developer can run it from the README | `docs: write complete README` |
 | 5.18 | Update PROJECT_PLAN.md to as-built, tick the deliverables checklist | Checklist complete | `docs: update project plan to as-built` |
 | 5.19 | Merge to `main`, tag the release | Live site matches `main` | `git tag v1.0.0 && git push --tags` |

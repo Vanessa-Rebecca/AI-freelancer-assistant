@@ -26,6 +26,39 @@ enum AiProvider {
   OPENAI
 }
 
+enum ClientStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum ActivityType {
+  CREATED
+  UPDATED
+  DELETED
+  GENERATED
+  EXPORTED
+}
+
+enum EntityType {
+  PROPOSAL
+  COVER_LETTER
+  GIG
+  PRICING
+  REPLY
+  INVOICE
+  CONTRACT
+  CLIENT
+}
+
+enum AiFeature {
+  PROPOSAL
+  COVER_LETTER
+  GIG
+  PRICING
+  REPLY
+  CONTRACT
+}
+
 model User {
   id              String    @id @default(cuid())
   email           String    @unique
@@ -41,6 +74,9 @@ model User {
   refreshTokens           RefreshToken[]
   passwordResetTokens     PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
+  clients                 Client[]
+  activities              Activity[]
+  aiUsage                 AiUsage[]
 
   @@map("users")
 }
@@ -123,4 +159,62 @@ model EmailVerificationToken {
 
   @@index([userId])
   @@map("email_verification_tokens")
+}
+
+// Archived instead of deleted when invoices or contracts still refer to them
+model Client {
+  id        String       @id @default(cuid())
+  userId    String
+  name      String
+  email     String?
+  company   String?
+  phone     String?
+  address   String?
+  notes     String?
+  status    ClientStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("clients")
+}
+
+// Timeline entries. Not linked to the entity on purpose: "Deleted proposal X"
+// must outlive the proposal, so the summary is written at the time.
+model Activity {
+  id         String       @id @default(cuid())
+  userId     String
+  type       ActivityType
+  entityType EntityType
+  entityId   String?
+  summary    String
+  createdAt  DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("activities")
+}
+
+// One row per AI call: credit accounting, cost tracking and an audit trail
+model AiUsage {
+  id           String     @id @default(cuid())
+  userId       String
+  feature      AiFeature
+  provider     AiProvider
+  model        String
+  inputTokens  Int        @default(0)
+  outputTokens Int        @default(0)
+  creditsUsed  Int        @default(0)
+  success      Boolean
+  errorCode    String?
+  durationMs   Int?
+  createdAt    DateTime   @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("ai_usage")
 }
