@@ -59,6 +59,15 @@ enum AiFeature {
   CONTRACT
 }
 
+// Same values as TONES in @afa/shared
+enum WritingTone {
+  PROFESSIONAL
+  FRIENDLY
+  PERSUASIVE
+  FORMAL
+  CONCISE
+}
+
 model User {
   id              String    @id @default(cuid())
   email           String    @unique
@@ -77,6 +86,7 @@ model User {
   clients                 Client[]
   activities              Activity[]
   aiUsage                 AiUsage[]
+  proposals               Proposal[]
 
   @@map("users")
 }
@@ -175,7 +185,8 @@ model Client {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  proposals Proposal[]
 
   @@index([userId, status])
   @@map("clients")
@@ -217,4 +228,30 @@ model AiUsage {
 
   @@index([userId, createdAt])
   @@map("ai_usage")
+}
+
+// A saved proposal. The inputs are kept so Edit can show them and Regenerate can rerun them.
+model Proposal {
+  id                 String      @id @default(cuid())
+  userId             String
+  // Optional link to a saved client; clientName is kept so the text survives if the client is removed
+  clientId           String?
+  clientName         String
+  projectTitle       String
+  projectDescription String
+  skills             String[]
+  budget             String
+  timeline           String
+  tone               WritingTone
+  content            String
+  promptVersion      String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([clientId])
+  @@map("proposals")
 }
