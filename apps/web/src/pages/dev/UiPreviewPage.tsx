@@ -5,6 +5,74 @@ import { Input, Select, Textarea } from '../../components/ui/Field.tsx';
 import { Modal } from '../../components/ui/Modal.tsx';
 import { Spinner } from '../../components/ui/Spinner.tsx';
 import { useToast } from '../../components/ui/Toast.tsx';
+import { CopyButton } from '../../components/documents/CopyButton.tsx';
+import { DocumentEditor } from '../../components/documents/DocumentEditor.tsx';
+import { DocumentList } from '../../components/documents/DocumentList.tsx';
+import type { ListItem } from '../../components/documents/DocumentList.tsx';
+import { GenerateButton } from '../../components/documents/GenerateButton.tsx';
+import { useListParams } from '../../lib/useListParams.ts';
+
+// 23 fake documents so search and paging can be tried without the API
+const fakeDocs: ListItem[] = Array.from({ length: 23 }, (_, i) => ({
+  id: `doc-${i + 1}`,
+  title: i % 5 === 0 ? `Bakery website ${i + 1}` : `Logo design project ${i + 1}`,
+  subtitle: `Client ${i + 1}`,
+  badge: i % 2 ? 'Friendly' : 'Professional',
+  preview:
+    'Hi there, I would love to help with your project. Here is how I would approach it, the timeline I propose and the budget it needs, in more words than fit on two lines of the list.',
+  createdAt: new Date(Date.now() - i * 3_600_000).toISOString(),
+}));
+
+function DocumentsPreview() {
+  const [text, setText] = useState('Hi Sarah,\n\nI would love to build your bakery website.');
+  const [generating, setGenerating] = useState(false);
+  const list = useListParams();
+  const matches = fakeDocs.filter((d) => d.title.toLowerCase().includes(list.q.toLowerCase()));
+  const pageSize = 10;
+  const data = {
+    items: matches.slice((list.page - 1) * pageSize, list.page * pageSize),
+    page: list.page,
+    pageSize,
+    total: matches.length,
+    totalPages: Math.ceil(matches.length / pageSize),
+  };
+
+  return (
+    <>
+      <Card
+        title="Document editor"
+        description="Grows with its content; counts words and characters"
+      >
+        <DocumentEditor label="Proposal" value={text} onChange={setText} busy={generating} />
+        <div className="mt-4 flex flex-wrap gap-3">
+          <GenerateButton
+            generating={generating}
+            credits={1}
+            onClick={() => {
+              setGenerating(true);
+              setTimeout(() => setGenerating(false), 3500);
+            }}
+          />
+          <CopyButton text={text} />
+        </div>
+      </Card>
+      <DocumentList
+        data={data}
+        isPending={false}
+        isError={false}
+        isFetching={false}
+        onRetry={() => {}}
+        search={list.search}
+        onSearch={list.setSearch}
+        page={list.page}
+        onPage={list.setPage}
+        hrefFor={(id) => `/dev/ui#${id}`}
+        searchLabel="Search documents"
+        empty={<p className="text-muted">No documents yet.</p>}
+      />
+    </>
+  );
+}
 
 // Development-only gallery of every UI component (route /dev/ui, not in production builds)
 export function UiPreviewPage() {
@@ -91,6 +159,8 @@ export function UiPreviewPage() {
           </span>
         </div>
       </Card>
+
+      <DocumentsPreview />
 
       <Modal
         open={modalOpen}
