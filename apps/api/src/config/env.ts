@@ -27,6 +27,8 @@ const envSchema = z.object({
   GEMINI_THINKING_BUDGET: z.coerce.number().int().min(0).optional().default(0),
   OPENAI_API_KEY: optionalSecret,
   OPENAI_MODEL: z.string().default('gpt-5-mini'),
+  // One deadline shared by all attempts (retry + fallback) of a generation
+  AI_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
 });
 
 const parsed = envSchema.safeParse(process.env);
