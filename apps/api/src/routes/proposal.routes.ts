@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { proposalInputSchema } from '@afa/shared';
+import { proposalInputSchema, proposalSaveSchema, proposalUpdateSchema } from '@afa/shared';
 import { requireAuth } from '../middleware/requireAuth.ts';
 import { aiRateLimit } from '../middleware/aiRateLimit.ts';
 import { validate } from '../middleware/validate.ts';
@@ -17,3 +17,9 @@ proposalRouter.post(
   validate(proposalInputSchema),
   proposalController.generate,
 );
+
+proposalRouter.get('/', proposalController.list);
+proposalRouter.post('/', validate(proposalSaveSchema), proposalController.create);
+proposalRouter.get('/:id', proposalController.get);
+proposalRouter.patch('/:id', validate(proposalUpdateSchema), proposalController.update);
+proposalRouter.delete('/:id', proposalController.remove);

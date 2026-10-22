@@ -71,3 +71,29 @@ export const coverLetterInputSchema = z.object({
 
 export type ProposalInput = z.infer<typeof proposalInputSchema>;
 export type CoverLetterInput = z.infer<typeof coverLetterInputSchema>;
+
+// Saving a draft: the inputs it was generated from, plus the (possibly edited) text
+export const proposalSaveSchema = proposalInputSchema.extend({
+  content: text('Proposal text', 20_000),
+  promptVersion: z.string().trim().max(40).optional(),
+});
+
+// Editing: any subset of the saved fields, but not nothing
+export const proposalUpdateSchema = proposalSaveSchema
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, 'Nothing to update');
+
+export const listQuerySchema = z.object({
+  q: z
+    .string()
+    .trim()
+    .max(100)
+    .optional()
+    .transform((v) => v || undefined),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(10),
+});
+
+export type ProposalSaveInput = z.infer<typeof proposalSaveSchema>;
+export type ProposalUpdateInput = z.infer<typeof proposalUpdateSchema>;
+export type ListQuery = z.infer<typeof listQuerySchema>;
