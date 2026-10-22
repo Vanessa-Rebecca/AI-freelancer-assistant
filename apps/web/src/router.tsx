@@ -21,5 +21,15 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute />,
     children: [{ path: '/dashboard', element: <DashboardPage /> }],
   },
+  // Component gallery for development; the dynamic import is dropped from production builds
+  ...(import.meta.env.DEV
+    ? [
+        {
+          path: '/dev/ui',
+          lazy: () =>
+            import('./pages/dev/UiPreviewPage.tsx').then((m) => ({ Component: m.UiPreviewPage })),
+        },
+      ]
+    : []),
   { path: '*', element: <NotFoundPage /> },
 ]);
