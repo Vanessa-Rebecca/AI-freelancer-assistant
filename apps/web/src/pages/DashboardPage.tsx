@@ -1,21 +1,21 @@
 import { useAuth } from '../auth/AuthContext.tsx';
-import { PlaceholderPage } from './PlaceholderPage.tsx';
+import { PageHeader } from '../components/layout/PageHeader.tsx';
+import { Card } from '../components/ui/Card.tsx';
 
+// Widgets and quick actions arrive in Step 1.21
 export function DashboardPage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const firstName = user?.profile?.fullName.split(' ')[0];
 
   return (
-    <PlaceholderPage title="Dashboard">
-      <p>
-        Signed in as <strong className="text-foreground">{user?.email}</strong>
-      </p>
-      <button
-        type="button"
-        onClick={logout}
-        className="mt-4 rounded-lg bg-primary px-4 py-2 text-primary-foreground hover:bg-primary-hover"
-      >
-        Log out
-      </button>
-    </PlaceholderPage>
+    <>
+      <PageHeader
+        title={firstName ? `Welcome back, ${firstName}` : 'Dashboard'}
+        description="Here's an overview of your freelance work."
+      />
+      <Card>
+        <p className="text-sm text-muted">Your stats and recent activity will appear here.</p>
+      </Card>
+    </>
   );
 }
