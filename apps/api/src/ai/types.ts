@@ -28,9 +28,12 @@ export interface AIProviderClient {
 }
 
 // Thrown by providers. `retryable` tells the caller whether trying again
-// (or with the fallback model) could succeed.
+// (or with a fallback model) could succeed.
+// QUOTA = this model's daily allowance is used up: retrying the same model is
+// pointless, but another model has its own allowance.
 export class AIProviderError extends Error {
-  readonly code: 'RATE_LIMITED' | 'UNAVAILABLE' | 'AUTH' | 'BAD_REQUEST' | 'EMPTY' | 'NETWORK';
+  readonly code:
+    'RATE_LIMITED' | 'QUOTA' | 'UNAVAILABLE' | 'AUTH' | 'BAD_REQUEST' | 'EMPTY' | 'NETWORK';
   readonly retryable: boolean;
   readonly status?: number;
 
@@ -39,7 +42,8 @@ export class AIProviderError extends Error {
     this.name = 'AIProviderError';
     this.code = code;
     this.status = status;
-    this.retryable = code === 'RATE_LIMITED' || code === 'UNAVAILABLE' || code === 'NETWORK';
+    this.retryable =
+      code === 'RATE_LIMITED' || code === 'QUOTA' || code === 'UNAVAILABLE' || code === 'NETWORK';
   }
 
   static fromStatus(status: number, message: string) {

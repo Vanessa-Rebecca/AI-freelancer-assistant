@@ -10,6 +10,7 @@ import { AppLayout } from './components/layout/AppLayout.tsx';
 import { ComingSoonPage } from './pages/ComingSoonPage.tsx';
 import { ProposalsPage } from './pages/proposals/ProposalsPage.tsx';
 import { NewProposalPage } from './pages/proposals/NewProposalPage.tsx';
+import { ProposalDetailPage } from './pages/proposals/ProposalDetailPage.tsx';
 
 // Modules built later in the plan: [path, title, day]
 const comingSoon: [string, string, number][] = [
@@ -48,6 +49,7 @@ export const router = createBrowserRouter([
           { path: '/dashboard', element: <DashboardPage /> },
           { path: '/proposals', element: <ProposalsPage /> },
           { path: '/proposals/new', element: <NewProposalPage /> },
+          { path: '/proposals/:id', element: <ProposalDetailPage /> },
           ...comingSoon.map(([path, title, day]) => ({
             path,
             element: <ComingSoonPage title={title} day={day} />,

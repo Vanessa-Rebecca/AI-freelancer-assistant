@@ -22,7 +22,17 @@ const envSchema = z.object({
   // AI. Keys are optional so the app still runs without them; AI calls then fail clearly.
   GEMINI_API_KEY: optionalSecret,
   GEMINI_MODEL: z.string().default('gemini-3.5-flash'),
-  GEMINI_FALLBACK_MODEL: z.string().default('gemini-3.6-flash'),
+  // Tried in order when the main model is busy, retired or out of daily quota.
+  // Each model has its own free-tier allowance, so more models = more capacity.
+  GEMINI_FALLBACK_MODELS: z
+    .string()
+    .default('gemini-3.6-flash,gemini-flash-latest,gemini-3.8-flash')
+    .transform((v) =>
+      v
+        .split(',')
+        .map((m) => m.trim())
+        .filter(Boolean),
+    ),
   // 0 = no "thinking": faster, and replies aren't cut off. Unset to use the model default.
   GEMINI_THINKING_BUDGET: z.coerce.number().int().min(0).optional().default(0),
   OPENAI_API_KEY: optionalSecret,

@@ -5,7 +5,10 @@ type GeminiResponse = {
   candidates?: { content?: { parts?: { text?: string }[] }; finishReason?: string }[];
   usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number };
   promptFeedback?: { blockReason?: string };
-  error?: { message?: string; details?: { reason?: string }[] };
+  error?: {
+    message?: string;
+    details?: { reason?: string; violations?: { quotaId?: string }[] }[];
+  };
 };
 
 const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
@@ -50,6 +53,13 @@ export class GeminiProvider implements AIProviderClient {
       // Gemini reports a bad key as 400, not 401; treat it as an auth error
       if (body.error?.details?.some((d) => d.reason === 'API_KEY_INVALID')) {
         throw new AIProviderError('AUTH', 'The Gemini API key is invalid', res.status);
+      }
+      // Free tier: each model has its own daily allowance (e.g. 20 requests/day)
+      const perDay = body.error?.details?.some((d) =>
+        d.violations?.some((v) => v.quotaId?.includes('PerDay')),
+      );
+      if (res.status === 429 && perDay) {
+        throw new AIProviderError('QUOTA', `Daily quota used up for ${model}`, res.status);
       }
       throw AIProviderError.fromStatus(
         res.status,

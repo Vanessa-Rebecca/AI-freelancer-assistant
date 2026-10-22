@@ -54,7 +54,7 @@ export function NewProposalPage() {
   const onSave = async () => {
     if (!generated) return;
     try {
-      await save.mutateAsync({
+      const proposal = await save.mutateAsync({
         ...generated.input,
         content: content.trim(),
         promptVersion: generated.draft.promptVersion,
@@ -62,7 +62,7 @@ export function NewProposalPage() {
       setSaved(true);
       toast.success('Proposal saved');
       // Let the guard see `saved` before navigating
-      setTimeout(() => navigate('/proposals'));
+      setTimeout(() => navigate(`/proposals/${proposal.id}`, { replace: true }));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't save the proposal.");
     }

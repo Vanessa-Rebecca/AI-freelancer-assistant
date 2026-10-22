@@ -82,22 +82,26 @@ async function refundCredits(userId: string, cost: number) {
 
 /**
  * Attempts, all sharing one deadline:
- *   primary model -> (if busy) primary again after a pause -> fallback model.
- * A retired model (404) skips straight to the fallback; auth/bad-request errors stop at once.
+ *   primary model -> (if briefly busy) primary again after a pause -> each fallback model.
+ * A retired model (404) or a used-up daily quota skips the same-model retry; each
+ * fallback has its own quota. Auth/bad-request errors stop at once.
  */
 async function callWithFallback(provider: AIProviderClient, request: AIRequest) {
   const deadline = AbortSignal.timeout(env.AI_TIMEOUT_MS);
-  const fallback = provider.name === 'GEMINI' ? env.GEMINI_FALLBACK_MODEL : undefined;
+  const fallbacks = (provider.name === 'GEMINI' ? env.GEMINI_FALLBACK_MODELS : []).filter(
+    (m) => m !== provider.defaultModel,
+  );
   const plan: { model: string; delay: number }[] = [
     { model: provider.defaultModel, delay: 0 },
     { model: provider.defaultModel, delay: RETRY_DELAY_MS },
-    ...(fallback && fallback !== provider.defaultModel ? [{ model: fallback, delay: 0 }] : []),
+    ...fallbacks.map((model) => ({ model, delay: 0 })),
   ];
 
   let lastError: unknown;
   for (let i = 0; i < plan.length; i++) {
     const { model, delay } = plan[i]!;
-    const sameModel = model === provider.defaultModel;
+    // Only the second entry repeats the previous model
+    const sameModel = i === 1;
     if (i > 0 && !shouldTryNext(lastError, sameModel)) {
       // Skip a pointless same-model retry but still give the fallback its turn
       if (sameModel) continue;
@@ -118,8 +122,8 @@ async function callWithFallback(provider: AIProviderClient, request: AIRequest) 
 function shouldTryNext(err: unknown, sameModel: boolean) {
   if (!(err instanceof AIProviderError)) return false;
   const retired = err.status === 404;
-  // Retrying a retired model is pointless; the fallback may still work
-  if (sameModel) return err.retryable && !retired;
+  // Retrying a retired or out-of-quota model is pointless; another model may still work
+  if (sameModel) return err.retryable && !retired && err.code !== 'QUOTA';
   return err.retryable || retired;
 }
 
@@ -180,6 +184,14 @@ function toClientError(err: unknown) {
     return new AppError(504, 'AI_TIMEOUT', `The AI took too long to respond. ${refunded}`);
   }
   if (err instanceof AIProviderError) {
+    // Every model in the chain has used up its daily allowance
+    if (err.code === 'QUOTA') {
+      return new AppError(
+        503,
+        'AI_QUOTA',
+        `Today's free AI limit has been reached. Please try again later. ${refunded}`,
+      );
+    }
     if (err.retryable) {
       return new AppError(
         503,
