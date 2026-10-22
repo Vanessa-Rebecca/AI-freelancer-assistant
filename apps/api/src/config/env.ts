@@ -29,6 +29,8 @@ const envSchema = z.object({
   OPENAI_MODEL: z.string().default('gpt-5-mini'),
   // One deadline shared by all attempts (retry + fallback) of a generation
   AI_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+  // Per user, across all AI features. Protects the shared provider quota.
+  AI_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(20),
 });
 
 const parsed = envSchema.safeParse(process.env);

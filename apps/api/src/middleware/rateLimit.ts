@@ -8,11 +8,13 @@ type Options = {
   key?: (req: Request) => string;
   // Only failed responses (status >= 400) use up the allowance
   failuresOnly?: boolean;
+  // Used in the 429 message: "Too many <what>"
+  what?: string;
 };
 
 // Fixed-window limiter kept in memory. Fine for a single server; with several
 // instances the counts would need a shared store such as Redis.
-export function rateLimit({ windowMs, max, key = clientIp, failuresOnly = false }: Options) {
+export function rateLimit({ windowMs, max, key = clientIp, failuresOnly = false, what }: Options) {
   const hits = new Map<string, { count: number; resetAt: number }>();
 
   // Drop expired windows so the map can't grow forever
@@ -33,7 +35,7 @@ export function rateLimit({ windowMs, max, key = clientIp, failuresOnly = false 
     if (entry.count >= max) {
       const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
       res.setHeader('Retry-After', retryAfter);
-      throw AppError.tooManyRequests(retryAfter);
+      throw AppError.tooManyRequests(retryAfter, what);
     }
 
     // Count up front, refund on success: parallel requests can't all slip
@@ -52,6 +54,11 @@ export function rateLimit({ windowMs, max, key = clientIp, failuresOnly = false 
 
 export function clientIp(req: Request) {
   return req.ip ?? 'unknown';
+}
+
+// For routes behind requireAuth: count per account, not per network
+export function userId(req: Request) {
+  return req.user?.id ?? clientIp(req);
 }
 
 // IP + the email in the body, so one person's typos don't lock out a whole network

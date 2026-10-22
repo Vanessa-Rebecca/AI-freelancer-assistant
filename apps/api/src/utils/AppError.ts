@@ -34,13 +34,20 @@ export class AppError extends Error {
     return new AppError(409, 'CONFLICT', message);
   }
 
-  static tooManyRequests(retryAfterSeconds: number) {
-    const minutes = Math.ceil(retryAfterSeconds / 60);
+  static tooManyRequests(retryAfterSeconds: number, what = 'attempts') {
+    const wait =
+      retryAfterSeconds < 60
+        ? plural(retryAfterSeconds, 'second')
+        : plural(Math.ceil(retryAfterSeconds / 60), 'minute');
     return new AppError(
       429,
       'TOO_MANY_REQUESTS',
-      `Too many attempts. Please try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`,
+      `Too many ${what}. Please try again in ${wait}.`,
       { retryAfterSeconds },
     );
   }
+}
+
+function plural(n: number, unit: string) {
+  return `${n} ${unit}${n === 1 ? '' : 's'}`;
 }
