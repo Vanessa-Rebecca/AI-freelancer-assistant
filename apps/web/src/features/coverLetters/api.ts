@@ -84,6 +84,8 @@ export function useUpdateCoverLetter(id: string) {
     onSuccess: (coverLetter) => {
       queryClient.setQueryData(coverLetterKeys.detail(id), coverLetter);
       queryClient.invalidateQueries({ queryKey: [...coverLetterKeys.all, 'list'] });
+      // The edit appears in Recent activity
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
     },
   });
 }

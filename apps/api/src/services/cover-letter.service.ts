@@ -10,6 +10,7 @@ import { prisma } from '../db/prisma.ts';
 import { AppError } from '../utils/AppError.ts';
 import { preview } from '../utils/preview.ts';
 import * as ai from './ai.service.ts';
+import { logActivity } from './activity.service.ts';
 import { getWriterProfile } from './writer-profile.service.ts';
 
 const NOT_FOUND = 'Cover letter not found';
@@ -31,8 +32,15 @@ export async function generateCoverLetter(userId: string, input: CoverLetterInpu
   };
 }
 
-export function createCoverLetter(userId: string, input: CoverLetterSaveInput) {
-  return prisma.coverLetter.create({ data: { userId, ...input } });
+export async function createCoverLetter(userId: string, input: CoverLetterSaveInput) {
+  const letter = await prisma.coverLetter.create({ data: { userId, ...input } });
+  await logActivity(userId, {
+    type: 'CREATED',
+    entityType: 'COVER_LETTER',
+    entityId: letter.id,
+    summary: `Saved cover letter for ${letter.jobTitle} at ${letter.companyName}`,
+  });
+  return letter;
 }
 
 // Every query below is scoped by userId: someone else's letter is a 404
@@ -86,10 +94,30 @@ export async function getCoverLetter(userId: string, id: string) {
 export async function updateCoverLetter(userId: string, id: string, input: CoverLetterUpdateInput) {
   const { count } = await prisma.coverLetter.updateMany({ where: { id, userId }, data: input });
   if (count === 0) throw AppError.notFound(NOT_FOUND);
-  return getCoverLetter(userId, id);
+  const letter = await getCoverLetter(userId, id);
+  await logActivity(userId, {
+    type: 'UPDATED',
+    entityType: 'COVER_LETTER',
+    entityId: id,
+    summary: `Edited cover letter for ${letter.jobTitle} at ${letter.companyName}`,
+  });
+  return letter;
 }
 
 export async function deleteCoverLetter(userId: string, id: string) {
+  // Read the details first: the timeline entry has to outlive the letter
+  const letter = await prisma.coverLetter.findFirst({
+    where: { id, userId },
+    select: { jobTitle: true, companyName: true },
+  });
+  if (!letter) throw AppError.notFound(NOT_FOUND);
+
   const { count } = await prisma.coverLetter.deleteMany({ where: { id, userId } });
   if (count === 0) throw AppError.notFound(NOT_FOUND);
+  await logActivity(userId, {
+    type: 'DELETED',
+    entityType: 'COVER_LETTER',
+    entityId: id,
+    summary: `Deleted cover letter for ${letter.jobTitle} at ${letter.companyName}`,
+  });
 }
