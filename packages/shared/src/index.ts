@@ -6,3 +6,6 @@ export * from './types/dashboard.ts';
 export * from './types/proposal.ts';
 export * from './types/coverLetter.ts';
 export * from './types/gig.ts';
+export * from './money.ts';
+export * from './pricing.ts';
+export * from './schemas/pricing.ts';
