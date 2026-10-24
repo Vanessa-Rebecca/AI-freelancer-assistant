@@ -35,7 +35,12 @@ export const skillsSchema = z
   .transform((v) => (Array.isArray(v) ? v : v.split(',')))
   .pipe(
     z
-      .array(z.string().trim().max(40, 'Each skill must be at most 40 characters. Separate skills with commas'))
+      .array(
+        z
+          .string()
+          .trim()
+          .max(40, 'Each skill must be at most 40 characters. Separate skills with commas'),
+      )
       .transform((list) => [...new Set(list.filter(Boolean))])
       .pipe(z.array(z.string()).min(1, 'Add at least one skill').max(20, 'Add at most 20 skills')),
   );
@@ -68,6 +73,75 @@ export const coverLetterInputSchema = z.object({
   jobDescription: optionalText('Job description', 5000),
   tone: toneSchema,
 });
+
+export const EXPERIENCE_LEVELS = ['BEGINNER', 'INTERMEDIATE', 'EXPERT'] as const;
+export type ExperienceLevel = (typeof EXPERIENCE_LEVELS)[number];
+
+export const experienceLevelLabels: Record<ExperienceLevel, string> = {
+  BEGINNER: 'Beginner',
+  INTERMEDIATE: 'Intermediate',
+  EXPERT: 'Expert',
+};
+
+// One feature per line from a textarea (features often contain commas), or an array from the API
+export const featuresSchema = z
+  .union([z.array(z.string()), z.string()], 'Add at least one feature')
+  .transform((v) => (Array.isArray(v) ? v : v.split('\n')))
+  .pipe(
+    z
+      .array(
+        z
+          .string()
+          .trim()
+          .max(120, 'Each feature must be at most 120 characters. Put one feature per line'),
+      )
+      .transform((list) => [...new Set(list.filter(Boolean))])
+      .pipe(
+        z.array(z.string()).min(1, 'Add at least one feature').max(15, 'Add at most 15 features'),
+      ),
+  );
+
+// Form values arrive as strings, so numbers are coerced ("" becomes 0)
+export const gigInputSchema = z.object({
+  category: text('Category', 80),
+  skills: skillsSchema,
+  experienceLevel: z.enum(EXPERIENCE_LEVELS, 'Choose an experience level'),
+  deliveryDays: z.coerce
+    .number('Enter the delivery time in days')
+    .int('Use whole days')
+    .min(1, 'Delivery time must be at least 1 day')
+    .max(90, 'Delivery time must be at most 90 days'),
+  features: featuresSchema,
+  revisions: z.coerce
+    .number('Enter the number of revisions')
+    .int('Use a whole number')
+    .min(0, 'Revisions cannot be negative')
+    .max(20, 'Offer at most 20 revisions'),
+});
+
+// The generated (and later user-edited) gig content. The AI must return exactly this shape.
+export const gigContentSchema = z.object({
+  description: text('Description', 3000).pipe(
+    z.string().min(50, 'Write a description of at least 50 characters'),
+  ),
+  seoKeywords: z
+    .array(z.string().trim().toLowerCase().max(60, 'Each keyword must be at most 60 characters'))
+    .transform((list) => [...new Set(list.filter(Boolean))])
+    .pipe(z.array(z.string()).min(3, 'Add at least 3 keywords').max(15, 'Add at most 15 keywords')),
+  faqs: z
+    .array(
+      z.object({
+        question: text('Question', 300),
+        answer: text('Answer', 1500),
+      }),
+    )
+    .min(1, 'Add at least one FAQ')
+    .max(10, 'Add at most 10 FAQs'),
+});
+
+export type GigInput = z.infer<typeof gigInputSchema>;
+export type GigContent = z.infer<typeof gigContentSchema>;
+export type GigFaq = GigContent['faqs'][number];
 
 export type ProposalInput = z.infer<typeof proposalInputSchema>;
 export type CoverLetterInput = z.infer<typeof coverLetterInputSchema>;
