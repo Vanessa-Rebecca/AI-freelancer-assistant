@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { TONES, proposalInputSchema, toneLabels } from '@afa/shared';
 import type { ProposalDraft, ProposalInput } from '@afa/shared';
@@ -28,6 +28,7 @@ export function NewProposalPage() {
 
   // What the AI last produced, and the inputs that produced it (used when saving)
   const [generated, setGenerated] = useState<Generated | null>(null);
+  const resultRef = useRef<HTMLElement>(null);
   const [content, setContent] = useState('');
   // Inputs waiting for "Replace your edits?" confirmation
   const [pendingInput, setPendingInput] = useState<ProposalInput | null>(null);
@@ -40,6 +41,10 @@ export function NewProposalPage() {
     const draft = await generate.mutateAsync(input);
     setGenerated({ draft, input });
     setContent(draft.content);
+    // The draft panel can be above (scrolled past) or below (phones) the button
+    requestAnimationFrame(() =>
+      resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+    );
     if (draft.truncated) {
       toast.info('The proposal was cut short. Try Regenerate or the Concise tone.');
     }
@@ -123,7 +128,7 @@ export function NewProposalPage() {
           </form>
         </Card>
 
-        <Card title="Your proposal" className="min-w-0">
+        <Card ref={resultRef} title="Your proposal" className="min-w-0 scroll-mt-20">
           {generated || generate.isPending ? (
             <>
               <DocumentEditor

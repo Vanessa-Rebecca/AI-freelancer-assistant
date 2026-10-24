@@ -35,7 +35,7 @@ export const skillsSchema = z
   .transform((v) => (Array.isArray(v) ? v : v.split(',')))
   .pipe(
     z
-      .array(z.string().trim().max(40, 'Each skill must be at most 40 characters'))
+      .array(z.string().trim().max(40, 'Each skill must be at most 40 characters. Separate skills with commas'))
       .transform((list) => [...new Set(list.filter(Boolean))])
       .pipe(z.array(z.string()).min(1, 'Add at least one skill').max(20, 'Add at most 20 skills')),
   );

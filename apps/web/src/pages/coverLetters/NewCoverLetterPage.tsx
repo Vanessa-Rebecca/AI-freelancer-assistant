@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { TONES, coverLetterInputSchema, toneLabels } from '@afa/shared';
 import type { CoverLetterInput, GeneratedDraft } from '@afa/shared';
@@ -28,6 +28,7 @@ export function NewCoverLetterPage() {
 
   // What the AI last produced, and the inputs that produced it (used when saving)
   const [generated, setGenerated] = useState<Generated | null>(null);
+  const resultRef = useRef<HTMLElement>(null);
   const [content, setContent] = useState('');
   const [pendingInput, setPendingInput] = useState<CoverLetterInput | null>(null);
   const [saved, setSaved] = useState(false);
@@ -39,6 +40,10 @@ export function NewCoverLetterPage() {
     const draft = await generate.mutateAsync(input);
     setGenerated({ draft, input });
     setContent(draft.content);
+    // The draft panel can be above (scrolled past) or below (phones) the button
+    requestAnimationFrame(() =>
+      resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+    );
     if (draft.truncated) {
       toast.info('The letter was cut short. Try Regenerate or the Concise tone.');
     }
@@ -126,7 +131,7 @@ export function NewCoverLetterPage() {
           </form>
         </Card>
 
-        <Card title="Your cover letter" className="min-w-0">
+        <Card ref={resultRef} title="Your cover letter" className="min-w-0 scroll-mt-20">
           {generated || generate.isPending ? (
             <>
               <DocumentEditor

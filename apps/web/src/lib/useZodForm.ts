@@ -5,12 +5,15 @@ import { ApiError } from './api.ts';
 
 type Errors = Record<string, string>;
 
+// Our forms are flat, so a nested path ("skills.2") belongs to its input ("skills");
+// otherwise the message would match no field and the submit would silently do nothing
+const fieldOf = (path: string) => path.split('.')[0] ?? path;
+
 // Collect the first message per field from a Zod error
 function toErrors(issues: z.core.$ZodIssue[]): Errors {
   const errors: Errors = {};
   for (const issue of issues) {
-    const field = issue.path.join('.');
-    errors[field] ??= issue.message;
+    errors[fieldOf(issue.path.join('.'))] ??= issue.message;
   }
   return errors;
 }
@@ -66,7 +69,7 @@ export function useZodForm<S extends z.ZodType>(
       ) {
         const fieldErrors: Errors = {};
         for (const d of err.details as { field: string; message: string }[]) {
-          fieldErrors[d.field] ??= d.message;
+          fieldErrors[fieldOf(d.field)] ??= d.message;
         }
         setErrors(fieldErrors);
         focusFirstError(form, fieldErrors);
