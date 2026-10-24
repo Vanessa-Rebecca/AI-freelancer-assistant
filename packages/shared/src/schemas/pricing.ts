@@ -81,3 +81,14 @@ export const pricingInputSchema = z.object({
 
 export type ExtraCharge = z.infer<typeof extraChargeSchema>;
 export type PricingInput = z.infer<typeof pricingInputSchema>;
+
+// Saving: the inputs plus a name for the history list. Totals are never sent; the server calculates them.
+export const pricingSaveSchema = pricingInputSchema.extend({
+  title: z
+    .string('Name the project')
+    .trim()
+    .min(1, 'Name the project')
+    .max(120, 'Keep the project name under 120 characters'),
+});
+
+export type PricingSaveInput = z.infer<typeof pricingSaveSchema>;

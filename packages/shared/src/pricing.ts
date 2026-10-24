@@ -1,4 +1,4 @@
-import { divideRounded, toHundredths } from './money.ts';
+import { divideRounded, fromCents, toHundredths } from './money.ts';
 import { COMPLEXITY_PERCENT, URGENCY_PERCENT } from './schemas/pricing.ts';
 import type { PricingInput } from './schemas/pricing.ts';
 
@@ -41,4 +41,22 @@ export function calculatePrice(input: PricingInput): PriceBreakdown {
   const tax = input.taxRate ? divideRounded(subtotal * toHundredths(input.taxRate), 10_000) : 0;
 
   return { base, complexity, urgency, extras, extrasTotal, subtotal, tax, total: subtotal + tax };
+}
+
+// The same breakdown with decimal strings ("1027.75"), as the API sends it
+export type PriceBreakdownText = {
+  [K in keyof PriceBreakdown]: K extends 'extras' ? { label: string; amount: string }[] : string;
+};
+
+export function breakdownToText(b: PriceBreakdown): PriceBreakdownText {
+  return {
+    base: fromCents(b.base),
+    complexity: fromCents(b.complexity),
+    urgency: fromCents(b.urgency),
+    extras: b.extras.map((e) => ({ label: e.label, amount: fromCents(e.amount) })),
+    extrasTotal: fromCents(b.extrasTotal),
+    subtotal: fromCents(b.subtotal),
+    tax: fromCents(b.tax),
+    total: fromCents(b.total),
+  };
 }

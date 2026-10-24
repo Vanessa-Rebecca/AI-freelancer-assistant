@@ -9,3 +9,4 @@ export * from './types/gig.ts';
 export * from './money.ts';
 export * from './pricing.ts';
 export * from './schemas/pricing.ts';
+export * from './types/pricing.ts';
