@@ -33,7 +33,15 @@ export interface AIProviderClient {
 // pointless, but another model has its own allowance.
 export class AIProviderError extends Error {
   readonly code:
-    'RATE_LIMITED' | 'QUOTA' | 'UNAVAILABLE' | 'AUTH' | 'BAD_REQUEST' | 'EMPTY' | 'NETWORK';
+    | 'RATE_LIMITED'
+    | 'QUOTA'
+    | 'UNAVAILABLE'
+    | 'AUTH'
+    | 'BAD_REQUEST'
+    | 'EMPTY'
+    | 'NETWORK'
+    // The reply wasn't the structured JSON we asked for, even after a repair attempt
+    | 'BAD_OUTPUT';
   readonly retryable: boolean;
   readonly status?: number;
 

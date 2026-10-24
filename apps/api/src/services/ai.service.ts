@@ -1,4 +1,5 @@
 import type { AiFeature } from '@prisma/client';
+import type { ZodType } from 'zod';
 import { getProvider } from '../ai/provider.ts';
 import { AIProviderError } from '../ai/types.ts';
 import type { AIProviderClient, AIRequest, AIResult } from '../ai/types.ts';
@@ -19,33 +20,83 @@ export const CREDIT_COST: Record<AiFeature, number> = {
 
 const RETRY_DELAY_MS = 1000;
 
-export type GenerationResult = AIResult & { creditsUsed: number; creditsRemaining: number };
+export type GenerationResult<T = undefined> = AIResult & {
+  creditsUsed: number;
+  creditsRemaining: number;
+  // The parsed, validated JSON when a `parse` schema was given
+  data: T;
+};
+
+type GenerateOptions<T> = {
+  // Ask for JSON and validate it against this schema (one repair attempt if invalid)
+  parse?: ZodType<T>;
+  // Tests can pass a fake provider; real calls always use getProvider()
+  provider?: AIProviderClient;
+};
 
 /**
  * The single entry point for AI features:
  * take credits atomically -> call the AI (retry, then fallback, one shared deadline)
+ * -> optionally parse + validate JSON, with one repair call
  * -> on failure refund -> always record the call in ai_usage.
  */
-export async function generate(
+export async function generate<T = undefined>(
   userId: string,
   feature: AiFeature,
   request: Omit<AIRequest, 'model' | 'signal'>,
-): Promise<GenerationResult> {
+  { parse, provider = getProvider() }: GenerateOptions<T> = {},
+): Promise<GenerationResult<T>> {
   // A user's own API key (Step 5.6) will be read here and make the call free
-  const provider = getProvider();
   const cost = CREDIT_COST[feature];
 
   await takeCredits(userId, cost);
 
   const started = Date.now();
+  // One deadline for everything, including a JSON repair call
+  const deadline = AbortSignal.timeout(env.AI_TIMEOUT_MS);
   try {
-    const result = await callWithFallback(provider, request);
+    let result = await callWithFallback(
+      provider,
+      { ...request, json: request.json || !!parse },
+      deadline,
+    );
+    let data = undefined as T;
+
+    if (parse) {
+      const first = parseJson(result.text, parse);
+      if (first.ok) {
+        data = first.data;
+      } else {
+        logger.warn(`AI returned unusable JSON, asking it to repair: ${first.problems}`);
+        const repair = await callWithFallback(
+          provider,
+          {
+            ...request,
+            json: true,
+            prompt: repairPrompt(request.prompt, result.text, first.problems),
+          },
+          deadline,
+        );
+        // Both calls count towards the token record, but the user pays one credit
+        result = {
+          ...repair,
+          inputTokens: result.inputTokens + repair.inputTokens,
+          outputTokens: result.outputTokens + repair.outputTokens,
+        };
+        const second = parseJson(repair.text, parse);
+        if (!second.ok) {
+          throw new AIProviderError('BAD_OUTPUT', `Unusable JSON after repair: ${second.problems}`);
+        }
+        data = second.data;
+      }
+    }
+
     const { aiCredits } = await prisma.user.findUniqueOrThrow({
       where: { id: userId },
       select: { aiCredits: true },
     });
     await recordUsage(userId, feature, provider, started, { result, creditsUsed: cost });
-    return { ...result, creditsUsed: cost, creditsRemaining: aiCredits };
+    return { ...result, data, creditsUsed: cost, creditsRemaining: aiCredits };
   } catch (err) {
     await refundCredits(userId, cost);
     await recordUsage(userId, feature, provider, started, { error: err });
@@ -86,8 +137,11 @@ async function refundCredits(userId: string, cost: number) {
  * A retired model (404) or a used-up daily quota skips the same-model retry; each
  * fallback has its own quota. Auth/bad-request errors stop at once.
  */
-async function callWithFallback(provider: AIProviderClient, request: AIRequest) {
-  const deadline = AbortSignal.timeout(env.AI_TIMEOUT_MS);
+async function callWithFallback(
+  provider: AIProviderClient,
+  request: AIRequest,
+  deadline: AbortSignal,
+) {
   const fallbacks = (provider.name === 'GEMINI' ? env.GEMINI_FALLBACK_MODELS : []).filter(
     (m) => m !== provider.defaultModel,
   );
@@ -184,6 +238,13 @@ function toClientError(err: unknown) {
     return new AppError(504, 'AI_TIMEOUT', `The AI took too long to respond. ${refunded}`);
   }
   if (err instanceof AIProviderError) {
+    if (err.code === 'BAD_OUTPUT') {
+      return new AppError(
+        502,
+        'AI_BAD_OUTPUT',
+        `The AI's answer couldn't be read. Please try again. ${refunded}`,
+      );
+    }
     // Every model in the chain has used up its daily allowance
     if (err.code === 'QUOTA') {
       return new AppError(
@@ -205,4 +266,39 @@ function toClientError(err: unknown) {
   }
   logger.error('Unexpected AI failure', err);
   return new AppError(500, 'INTERNAL_ERROR', `Something went wrong. ${refunded}`);
+}
+
+type Parsed<T> = { ok: true; data: T } | { ok: false; problems: string };
+
+// Strip markdown fences, parse, and validate against the schema
+function parseJson<T>(text: string, schema: ZodType<T>): Parsed<T> {
+  const cleaned = text
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/, '');
+  let value: unknown;
+  try {
+    value = JSON.parse(cleaned);
+  } catch (err) {
+    return { ok: false, problems: `not valid JSON (${(err as Error).message})` };
+  }
+  const result = schema.safeParse(value);
+  if (result.success) return { ok: true, data: result.data };
+  const problems = result.error.issues
+    .slice(0, 8)
+    .map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`)
+    .join('; ');
+  return { ok: false, problems };
+}
+
+// Second chance: show the model its reply and exactly what was wrong with it
+function repairPrompt(original: string, reply: string, problems: string) {
+  return `${original}
+
+Your previous reply could not be used because: ${problems}
+
+Your previous reply was:
+${reply.slice(0, 4000)}
+
+Reply again with ONLY the corrected JSON object, matching the required structure exactly.`;
 }
