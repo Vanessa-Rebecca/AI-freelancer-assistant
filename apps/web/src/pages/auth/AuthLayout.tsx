@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
+export { FormAlert } from '../../components/ui/FormAlert.tsx';
 
 type AuthLayoutProps = {
   title: string;
@@ -30,19 +31,6 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
 
       {footer && <p className="mt-6 text-center text-sm text-muted">{footer}</p>}
     </main>
-  );
-}
-
-// Form-level message (wrong password, rate limited, server down)
-export function FormAlert({ message }: { message: string | null }) {
-  if (!message) return null;
-  return (
-    <div
-      role="alert"
-      className="mb-4 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2.5 text-sm text-danger"
-    >
-      {message}
-    </div>
   );
 }
 

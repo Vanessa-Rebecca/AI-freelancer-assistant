@@ -2,7 +2,7 @@ import type { DashboardStats } from '@afa/shared';
 import { prisma } from '../db/prisma.ts';
 import { AppError } from '../utils/AppError.ts';
 
-type StatsRow = { activeClients: bigint; aiCredits: number | null };
+type StatsRow = { proposals: bigint; activeClients: bigint; aiCredits: number | null };
 
 // All widget numbers in one round trip to the database. $queryRaw with a
 // tagged template sends userId as a bound parameter, never as SQL text.
@@ -10,13 +10,14 @@ type StatsRow = { activeClients: bigint; aiCredits: number | null };
 export async function getStats(userId: string): Promise<DashboardStats> {
   const [row] = await prisma.$queryRaw<StatsRow[]>`
     SELECT
+      (SELECT count(*) FROM proposals WHERE "userId" = ${userId})                     AS "proposals",
       (SELECT count(*) FROM clients WHERE "userId" = ${userId} AND status = 'ACTIVE') AS "activeClients",
       (SELECT "aiCredits" FROM users WHERE id = ${userId})                            AS "aiCredits"
   `;
   if (!row || row.aiCredits === null) throw AppError.unauthorized();
 
   return {
-    proposals: 0, // Day 2
+    proposals: Number(row.proposals),
     coverLetters: 0, // Day 2
     activeClients: Number(row.activeClients),
     invoices: 0, // Day 4

@@ -8,10 +8,12 @@ import { RegisterPage } from './pages/auth/RegisterPage.tsx';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage.tsx';
 import { AppLayout } from './components/layout/AppLayout.tsx';
 import { ComingSoonPage } from './pages/ComingSoonPage.tsx';
+import { ProposalsPage } from './pages/proposals/ProposalsPage.tsx';
+import { NewProposalPage } from './pages/proposals/NewProposalPage.tsx';
+import { ProposalDetailPage } from './pages/proposals/ProposalDetailPage.tsx';
 
 // Modules built later in the plan: [path, title, day]
 const comingSoon: [string, string, number][] = [
-  ['/proposals', 'Proposals', 2],
   ['/cover-letters', 'Cover letters', 2],
   ['/gigs', 'Gig descriptions', 3],
   ['/pricing', 'Pricing', 3],
@@ -45,6 +47,9 @@ export const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { path: '/dashboard', element: <DashboardPage /> },
+          { path: '/proposals', element: <ProposalsPage /> },
+          { path: '/proposals/new', element: <NewProposalPage /> },
+          { path: '/proposals/:id', element: <ProposalDetailPage /> },
           ...comingSoon.map(([path, title, day]) => ({
             path,
             element: <ComingSoonPage title={title} day={day} />,
