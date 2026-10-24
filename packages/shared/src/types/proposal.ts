@@ -22,7 +22,8 @@ export type ProposalSummary = Pick<
   'id' | 'clientName' | 'projectTitle' | 'tone' | 'createdAt' | 'updatedAt'
 > & { preview: string };
 
-export type ProposalDraft = {
+// What every AI generate endpoint returns: an unsaved draft
+export type GeneratedDraft = {
   content: string;
   promptVersion: string;
   model: string;
@@ -30,6 +31,9 @@ export type ProposalDraft = {
   creditsRemaining: number;
   truncated: boolean;
 };
+
+// Kept so existing imports keep working
+export type ProposalDraft = GeneratedDraft;
 
 export type Paginated<T> = {
   items: T[];

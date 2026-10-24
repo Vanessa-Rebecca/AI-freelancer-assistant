@@ -3,11 +3,11 @@ import type { ListQuery, ProposalInput, ProposalSaveInput, ProposalUpdateInput }
 import { buildProposalPrompt } from '../ai/prompts/proposal.v1.ts';
 import { prisma } from '../db/prisma.ts';
 import { AppError } from '../utils/AppError.ts';
+import { preview } from '../utils/preview.ts';
 import * as ai from './ai.service.ts';
 import { getWriterProfile } from './writer-profile.service.ts';
 
 const NOT_FOUND = 'Proposal not found';
-const PREVIEW_LENGTH = 160;
 
 // Returns a draft only. Nothing is saved until the user edits and saves it.
 export async function generateProposal(userId: string, input: ProposalInput) {
@@ -91,12 +91,4 @@ export async function updateProposal(userId: string, id: string, input: Proposal
 export async function deleteProposal(userId: string, id: string) {
   const { count } = await prisma.proposal.deleteMany({ where: { id, userId } });
   if (count === 0) throw AppError.notFound(NOT_FOUND);
-}
-
-// First characters on a word boundary, with line breaks flattened
-function preview(content: string) {
-  const flat = content.replace(/\s+/g, ' ').trim();
-  if (flat.length <= PREVIEW_LENGTH) return flat;
-  const cut = flat.slice(0, PREVIEW_LENGTH);
-  return `${cut.slice(0, cut.lastIndexOf(' ') > 0 ? cut.lastIndexOf(' ') : PREVIEW_LENGTH)}…`;
 }

@@ -97,3 +97,15 @@ export const listQuerySchema = z.object({
 export type ProposalSaveInput = z.infer<typeof proposalSaveSchema>;
 export type ProposalUpdateInput = z.infer<typeof proposalUpdateSchema>;
 export type ListQuery = z.infer<typeof listQuerySchema>;
+
+export const coverLetterSaveSchema = coverLetterInputSchema.extend({
+  content: text('Cover letter text', 20_000),
+  promptVersion: z.string().trim().max(40).optional(),
+});
+
+export const coverLetterUpdateSchema = coverLetterSaveSchema
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, 'Nothing to update');
+
+export type CoverLetterSaveInput = z.infer<typeof coverLetterSaveSchema>;
+export type CoverLetterUpdateInput = z.infer<typeof coverLetterUpdateSchema>;
