@@ -183,3 +183,16 @@ export const coverLetterUpdateSchema = coverLetterSaveSchema
 
 export type CoverLetterSaveInput = z.infer<typeof coverLetterSaveSchema>;
 export type CoverLetterUpdateInput = z.infer<typeof coverLetterUpdateSchema>;
+
+// Saving a gig: the inputs it was generated from, plus the (possibly edited) sections
+export const gigSaveSchema = gigInputSchema.extend({
+  ...gigContentSchema.shape,
+  promptVersion: z.string().trim().max(40).optional(),
+});
+
+export const gigUpdateSchema = gigSaveSchema
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, 'Nothing to update');
+
+export type GigSaveInput = z.infer<typeof gigSaveSchema>;
+export type GigUpdateInput = z.infer<typeof gigUpdateSchema>;

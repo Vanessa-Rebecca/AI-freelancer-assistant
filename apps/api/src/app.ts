@@ -9,6 +9,7 @@ import { authRouter } from './routes/auth.routes.ts';
 import { dashboardRouter } from './routes/dashboard.routes.ts';
 import { proposalRouter } from './routes/proposal.routes.ts';
 import { coverLetterRouter } from './routes/cover-letter.routes.ts';
+import { gigRouter } from './routes/gig.routes.ts';
 
 export function createApp() {
   const app = express();
@@ -24,6 +25,7 @@ export function createApp() {
   app.use('/api/v1/dashboard', dashboardRouter);
   app.use('/api/v1/proposals', proposalRouter);
   app.use('/api/v1/cover-letters', coverLetterRouter);
+  app.use('/api/v1/gigs', gigRouter);
 
   // Must stay last: unknown routes, then the single error formatter
   app.use(notFoundHandler);
