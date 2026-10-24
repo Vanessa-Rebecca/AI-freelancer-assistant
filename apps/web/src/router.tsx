@@ -11,10 +11,12 @@ import { ComingSoonPage } from './pages/ComingSoonPage.tsx';
 import { ProposalsPage } from './pages/proposals/ProposalsPage.tsx';
 import { NewProposalPage } from './pages/proposals/NewProposalPage.tsx';
 import { ProposalDetailPage } from './pages/proposals/ProposalDetailPage.tsx';
+import { CoverLettersPage } from './pages/coverLetters/CoverLettersPage.tsx';
+import { NewCoverLetterPage } from './pages/coverLetters/NewCoverLetterPage.tsx';
+import { CoverLetterDetailPage } from './pages/coverLetters/CoverLetterDetailPage.tsx';
 
 // Modules built later in the plan: [path, title, day]
 const comingSoon: [string, string, number][] = [
-  ['/cover-letters', 'Cover letters', 2],
   ['/gigs', 'Gig descriptions', 3],
   ['/pricing', 'Pricing', 3],
   ['/replies', 'Client replies', 4],
@@ -50,6 +52,9 @@ export const router = createBrowserRouter([
           { path: '/proposals', element: <ProposalsPage /> },
           { path: '/proposals/new', element: <NewProposalPage /> },
           { path: '/proposals/:id', element: <ProposalDetailPage /> },
+          { path: '/cover-letters', element: <CoverLettersPage /> },
+          { path: '/cover-letters/new', element: <NewCoverLetterPage /> },
+          { path: '/cover-letters/:id', element: <CoverLetterDetailPage /> },
           ...comingSoon.map(([path, title, day]) => ({
             path,
             element: <ComingSoonPage title={title} day={day} />,

@@ -87,6 +87,7 @@ model User {
   activities              Activity[]
   aiUsage                 AiUsage[]
   proposals               Proposal[]
+  coverLetters            CoverLetter[]
 
   @@map("users")
 }
@@ -254,4 +255,26 @@ model Proposal {
   @@index([userId, createdAt(sort: Desc)])
   @@index([clientId])
   @@map("proposals")
+}
+
+// A saved cover letter, with the inputs that produced it
+model CoverLetter {
+  id             String      @id @default(cuid())
+  userId         String
+  jobTitle       String
+  companyName    String
+  experience     String
+  skills         String[]
+  portfolioUrl   String?
+  jobDescription String?
+  tone           WritingTone
+  content        String
+  promptVersion  String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("cover_letters")
 }

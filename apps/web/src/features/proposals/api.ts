@@ -88,6 +88,8 @@ export function useUpdateProposal(id: string) {
       // Use the server's copy directly: no refetch, no flicker
       queryClient.setQueryData(proposalKeys.detail(id), proposal);
       queryClient.invalidateQueries({ queryKey: [...proposalKeys.all, 'list'] });
+      // The edit appears in Recent activity
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
     },
   });
 }

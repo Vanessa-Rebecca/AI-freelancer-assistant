@@ -3,11 +3,12 @@ import type { ListQuery, ProposalInput, ProposalSaveInput, ProposalUpdateInput }
 import { buildProposalPrompt } from '../ai/prompts/proposal.v1.ts';
 import { prisma } from '../db/prisma.ts';
 import { AppError } from '../utils/AppError.ts';
+import { preview } from '../utils/preview.ts';
 import * as ai from './ai.service.ts';
+import { logActivity } from './activity.service.ts';
 import { getWriterProfile } from './writer-profile.service.ts';
 
 const NOT_FOUND = 'Proposal not found';
-const PREVIEW_LENGTH = 160;
 
 // Returns a draft only. Nothing is saved until the user edits and saves it.
 export async function generateProposal(userId: string, input: ProposalInput) {
@@ -27,8 +28,15 @@ export async function generateProposal(userId: string, input: ProposalInput) {
   };
 }
 
-export function createProposal(userId: string, input: ProposalSaveInput) {
-  return prisma.proposal.create({ data: { userId, ...input } });
+export async function createProposal(userId: string, input: ProposalSaveInput) {
+  const proposal = await prisma.proposal.create({ data: { userId, ...input } });
+  await logActivity(userId, {
+    type: 'CREATED',
+    entityType: 'PROPOSAL',
+    entityId: proposal.id,
+    summary: `Saved proposal "${proposal.projectTitle}" for ${proposal.clientName}`,
+  });
+  return proposal;
 }
 
 // Every query below is scoped by userId: another user's proposal is a 404,
@@ -85,18 +93,30 @@ export async function updateProposal(userId: string, id: string, input: Proposal
   // Matches nothing if the proposal belongs to someone else
   const { count } = await prisma.proposal.updateMany({ where: { id, userId }, data: input });
   if (count === 0) throw AppError.notFound(NOT_FOUND);
-  return getProposal(userId, id);
+  const proposal = await getProposal(userId, id);
+  await logActivity(userId, {
+    type: 'UPDATED',
+    entityType: 'PROPOSAL',
+    entityId: id,
+    summary: `Edited proposal "${proposal.projectTitle}"`,
+  });
+  return proposal;
 }
 
 export async function deleteProposal(userId: string, id: string) {
+  // Read the title first: the timeline entry has to outlive the proposal
+  const proposal = await prisma.proposal.findFirst({
+    where: { id, userId },
+    select: { projectTitle: true },
+  });
+  if (!proposal) throw AppError.notFound(NOT_FOUND);
+
   const { count } = await prisma.proposal.deleteMany({ where: { id, userId } });
   if (count === 0) throw AppError.notFound(NOT_FOUND);
-}
-
-// First characters on a word boundary, with line breaks flattened
-function preview(content: string) {
-  const flat = content.replace(/\s+/g, ' ').trim();
-  if (flat.length <= PREVIEW_LENGTH) return flat;
-  const cut = flat.slice(0, PREVIEW_LENGTH);
-  return `${cut.slice(0, cut.lastIndexOf(' ') > 0 ? cut.lastIndexOf(' ') : PREVIEW_LENGTH)}…`;
+  await logActivity(userId, {
+    type: 'DELETED',
+    entityType: 'PROPOSAL',
+    entityId: id,
+    summary: `Deleted proposal "${proposal.projectTitle}"`,
+  });
 }
