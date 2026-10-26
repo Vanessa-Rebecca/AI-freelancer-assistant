@@ -327,6 +327,7 @@ model PricingEstimate {
   id           String     @id @default(cuid())
   userId       String
   title        String
+  description  String?
   currency     String // ISO 4217 code
   hourlyRate   Decimal    @db.Decimal(12, 2)
   hours        Decimal    @db.Decimal(10, 2)

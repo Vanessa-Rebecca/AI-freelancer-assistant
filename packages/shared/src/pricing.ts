@@ -60,3 +60,16 @@ export function breakdownToText(b: PriceBreakdown): PriceBreakdownText {
     total: fromCents(b.total),
   };
 }
+
+export type PricePosition = 'BELOW' | 'WITHIN' | 'ABOVE';
+
+/**
+ * Where the user's price sits against an AI range. Plain maths, so the verdict
+ * can't be wrong even if the AI's wording is. Compared before tax: tax isn't
+ * part of the market price.
+ */
+export function pricePosition(subtotalCents: number, range: { low: string; high: string }) {
+  if (subtotalCents < toHundredths(range.low)) return 'BELOW' satisfies PricePosition;
+  if (subtotalCents > toHundredths(range.high)) return 'ABOVE' satisfies PricePosition;
+  return 'WITHIN' satisfies PricePosition;
+}

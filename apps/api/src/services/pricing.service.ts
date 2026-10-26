@@ -1,16 +1,21 @@
 import type { PricingEstimate as PricingRow, Prisma } from '@prisma/client';
-import { breakdownToText, calculatePrice, fromCents } from '@afa/shared';
+import { breakdownToText, calculatePrice, fromCents, pricingSuggestionSchema } from '@afa/shared';
 import type {
   Currency,
   ExtraCharge,
   ListQuery,
   PricingEstimate,
   PricingInput,
+  PricingProjectInput,
   PricingSaveInput,
+  PricingSuggestion,
 } from '@afa/shared';
+import { buildPricingPrompt } from '../ai/prompts/pricing.v1.ts';
 import { prisma } from '../db/prisma.ts';
 import { AppError } from '../utils/AppError.ts';
+import * as ai from './ai.service.ts';
 import { logActivity } from './activity.service.ts';
+import { getWriterProfile } from './writer-profile.service.ts';
 
 const NOT_FOUND = 'Price estimate not found';
 
@@ -19,13 +24,35 @@ export function calculate(input: PricingInput) {
   return breakdownToText(calculatePrice(input));
 }
 
+// AI second opinion on the user's own price. Costs a credit; nothing is saved
+// until the estimate is (the suggestion is then stored with it).
+export async function suggest(userId: string, input: PricingProjectInput) {
+  const writer = await getWriterProfile(userId);
+  const spec = buildPricingPrompt(input, calculatePrice(input), writer);
+
+  const result = await ai.generate(userId, 'PRICING', spec, { parse: pricingSuggestionSchema });
+
+  return {
+    suggestion: result.data,
+    promptVersion: spec.version,
+    model: result.model,
+    creditsUsed: result.creditsUsed,
+    creditsRemaining: result.creditsRemaining,
+  };
+}
+
 // The client sends inputs only; the totals stored are always the server's own
-export async function saveEstimate(userId: string, { title, ...input }: PricingSaveInput) {
+export async function saveEstimate(
+  userId: string,
+  { title, description, aiSuggestion, ...input }: PricingSaveInput,
+) {
   const price = calculatePrice(input);
   const row = await prisma.pricingEstimate.create({
     data: {
       userId,
       title,
+      description: description ?? null,
+      ...(aiSuggestion && { aiSuggestion }),
       currency: input.currency,
       hourlyRate: input.hourlyRate,
       hours: input.hours,
@@ -126,6 +153,7 @@ function toEstimate(row: PricingRow): PricingEstimate {
   return {
     id: row.id,
     title: row.title,
+    description: row.description,
     ...input,
     taxRate: input.taxRate ?? null,
     breakdown: {
@@ -135,7 +163,8 @@ function toEstimate(row: PricingRow): PricingEstimate {
       tax: row.tax.toFixed(2),
       total: row.total.toFixed(2),
     },
-    aiSuggestion: row.aiSuggestion,
+    // Validated with pricingSuggestionSchema before it was stored
+    aiSuggestion: row.aiSuggestion as PricingSuggestion | null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

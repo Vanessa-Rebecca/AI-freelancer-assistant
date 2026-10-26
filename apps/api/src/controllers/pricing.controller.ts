@@ -9,6 +9,11 @@ export const calculate: RequestHandler = (req, res) => {
   res.json({ data: { breakdown: pricingService.calculate(req.body) } });
 };
 
+export const suggest: RequestHandler = async (req, res) => {
+  const result = await pricingService.suggest(authUser(req).id, req.body);
+  res.json({ data: result });
+};
+
 export const create: RequestHandler = async (req, res) => {
   const estimate = await pricingService.saveEstimate(authUser(req).id, req.body);
   res.status(201).json({ data: { estimate } });

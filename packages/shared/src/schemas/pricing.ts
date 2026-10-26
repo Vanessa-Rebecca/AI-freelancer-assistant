@@ -82,13 +82,56 @@ export const pricingInputSchema = z.object({
 export type ExtraCharge = z.infer<typeof extraChargeSchema>;
 export type PricingInput = z.infer<typeof pricingInputSchema>;
 
-// Saving: the inputs plus a name for the history list. Totals are never sent; the server calculates them.
-export const pricingSaveSchema = pricingInputSchema.extend({
+// What the AI must return for a pricing suggestion. Amounts accept JSON numbers.
+export const pricingSuggestionSchema = z
+  .object({
+    priceRange: z.object({
+      low: decimal('Lowest price', { min: 0.01, max: 1_000_000_000 }),
+      high: decimal('Highest price', { min: 0.01, max: 1_000_000_000 }),
+    }),
+    deliveryDays: z.object({
+      min: z.number().int().min(1).max(365),
+      max: z.number().int().min(1).max(365),
+    }),
+    positioning: z.string().trim().min(20).max(1200),
+    tips: z.array(z.string().trim().min(5).max(300)).min(2).max(6),
+  })
+  // Skipped when an amount is already invalid (it has its own error)
+  .refine(
+    ({ priceRange: { low, high } }) =>
+      inRange(String(low), (l) => inRange(String(high), (h) => l <= h)),
+    {
+      message: 'The lowest price must not be above the highest',
+      path: ['priceRange'],
+    },
+  )
+  .refine((s) => s.deliveryDays.min <= s.deliveryDays.max, {
+    message: 'The shortest delivery must not be above the longest',
+    path: ['deliveryDays'],
+  });
+
+// The calculator inputs plus what the project is: a name for the history list,
+// and an optional description the AI needs to judge the market
+export const pricingProjectSchema = pricingInputSchema.extend({
   title: z
     .string('Name the project')
     .trim()
     .min(1, 'Name the project')
     .max(120, 'Keep the project name under 120 characters'),
+  description: z
+    .string()
+    .trim()
+    .max(2000, 'Keep the description under 2,000 characters')
+    .optional()
+    .transform((v) => v || undefined),
 });
 
+// Saving: totals are never sent, the server calculates them. A suggestion the
+// user already paid for is kept with the estimate.
+export const pricingSaveSchema = pricingProjectSchema.extend({
+  aiSuggestion: pricingSuggestionSchema.optional(),
+});
+
+export type PricingSuggestion = z.infer<typeof pricingSuggestionSchema>;
+export type PricingProjectInput = z.infer<typeof pricingProjectSchema>;
 export type PricingSaveInput = z.infer<typeof pricingSaveSchema>;

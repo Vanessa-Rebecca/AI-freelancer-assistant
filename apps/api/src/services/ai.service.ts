@@ -176,8 +176,10 @@ async function callWithFallback(
 function shouldTryNext(err: unknown, sameModel: boolean) {
   if (!(err instanceof AIProviderError)) return false;
   const retired = err.status === 404;
-  // Retrying a retired or out-of-quota model is pointless; another model may still work
-  if (sameModel) return err.retryable && !retired && err.code !== 'QUOTA';
+  // Retrying a retired or out-of-quota model is pointless, and an overloaded one
+  // ("high demand", often after a ~10 s wait) rarely recovers in a second:
+  // the time is better spent on another model, which has its own capacity
+  if (sameModel) return err.code === 'RATE_LIMITED' || err.code === 'NETWORK';
   return err.retryable || retired;
 }
 
