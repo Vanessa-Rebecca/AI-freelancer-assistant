@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { TONES, proposalInputSchema, toneLabels } from '@afa/shared';
 import type { ProposalDraft, ProposalInput } from '@afa/shared';
 import { PageHeader } from '../../components/layout/PageHeader.tsx';
@@ -12,6 +12,7 @@ import { Input, Select, Textarea } from '../../components/ui/Field.tsx';
 import { Modal } from '../../components/ui/Modal.tsx';
 import { useToast } from '../../components/ui/Toast.tsx';
 import { useGenerateProposal, useSaveProposal } from '../../features/proposals/api.ts';
+import { readProposalPrefill } from '../../features/proposals/prefill.ts';
 import { useUnsavedChangesGuard } from '../../lib/useUnsavedChangesGuard.ts';
 import { useZodForm } from '../../lib/useZodForm.ts';
 import { FormAlert } from '../../components/ui/FormAlert.tsx';
@@ -23,6 +24,9 @@ type Generated = { draft: ProposalDraft; input: ProposalInput };
 export function NewProposalPage() {
   const toast = useToast();
   const navigate = useNavigate();
+  // Read once: the inputs are uncontrolled, so these only seed their starting values
+  const location = useLocation();
+  const [prefill] = useState(() => readProposalPrefill(location.state));
   const generate = useGenerateProposal();
   const save = useSaveProposal();
 
@@ -83,6 +87,15 @@ export function NewProposalPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card title="Project details" className="min-w-0">
           <FormAlert message={form.formError} />
+          {prefill && (
+            <p
+              role="status"
+              className="mb-4 rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary"
+            >
+              Filled in from {prefill.source}. Check the details, add the client and skills, then
+              generate.
+            </p>
+          )}
           <form onSubmit={form.handleSubmit} noValidate className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <Input
@@ -93,12 +106,14 @@ export function NewProposalPage() {
               <Input
                 {...form.field('projectTitle')}
                 label="Project title"
+                defaultValue={prefill?.projectTitle}
                 placeholder="Bakery website"
               />
             </div>
             <Textarea
               {...form.field('projectDescription')}
               label="Project description"
+              defaultValue={prefill?.projectDescription}
               rows={6}
               placeholder="Paste the job post or describe what the client needs…"
             />
@@ -109,8 +124,18 @@ export function NewProposalPage() {
               hint="Separate skills with commas"
             />
             <div className="grid gap-4 sm:grid-cols-2">
-              <Input {...form.field('budget')} label="Budget" placeholder="$800 fixed price" />
-              <Input {...form.field('timeline')} label="Timeline" placeholder="3 weeks" />
+              <Input
+                {...form.field('budget')}
+                label="Budget"
+                placeholder="$800 fixed price"
+                defaultValue={prefill?.budget}
+              />
+              <Input
+                {...form.field('timeline')}
+                label="Timeline"
+                placeholder="3 weeks"
+                defaultValue={prefill?.timeline}
+              />
             </div>
             <Select
               {...form.field('tone')}

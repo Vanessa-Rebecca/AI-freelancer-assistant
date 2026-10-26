@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { calculatePrice } from '@afa/shared';
+import { calculatePrice, formatMoney } from '@afa/shared';
 import type { PricingEstimate, PricingInput } from '@afa/shared';
 import { PageHeader } from '../../components/layout/PageHeader.tsx';
 import { CopyButton } from '../../components/documents/CopyButton.tsx';
@@ -16,6 +16,7 @@ import { QueryError } from '../../components/ui/QueryError.tsx';
 import { Skeleton } from '../../components/ui/Skeleton.tsx';
 import { useToast } from '../../components/ui/Toast.tsx';
 import { useDeleteEstimate, useEstimate } from '../../features/pricing/api.ts';
+import type { ProposalPrefill } from '../../features/proposals/prefill.ts';
 import { ApiError } from '../../lib/api.ts';
 import { timeAgo } from '../../lib/time.ts';
 
@@ -72,6 +73,18 @@ function Estimate({ estimate }: { estimate: PricingEstimate }) {
   const price = calculatePrice(input);
   const lines = priceLines(input, price);
 
+  // "Use this price": the exact saved total, formatted here (never by the AI)
+  const days = estimate.aiSuggestion?.deliveryDays;
+  const proposalPrefill: ProposalPrefill = {
+    projectTitle: estimate.title,
+    projectDescription: estimate.description ?? undefined,
+    budget: `${formatMoney(price.total, estimate.currency)} fixed price${
+      estimate.taxRate ? ` (incl. ${Number(estimate.taxRate)}% tax)` : ''
+    }`,
+    timeline: days && (days.min === days.max ? `${days.min} days` : `${days.min}–${days.max} days`),
+    source: `your “${estimate.title}” estimate`,
+  };
+
   const onDelete = async () => {
     try {
       await remove.mutateAsync(estimate.id);
@@ -111,7 +124,13 @@ function Estimate({ estimate }: { estimate: PricingEstimate }) {
           )}
           <BreakdownTable lines={lines} currency={estimate.currency} />
           <div className="mt-5 flex flex-wrap gap-3">
-            <Button onClick={() => navigate('/pricing', { state: { from: estimate } })}>
+            <Button onClick={() => navigate('/proposals/new', { state: { proposalPrefill } })}>
+              Use this price
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => navigate('/pricing', { state: { from: estimate } })}
+            >
               Edit as new estimate
             </Button>
             <CopyButton text={quoteText(lines, estimate.currency)} />
